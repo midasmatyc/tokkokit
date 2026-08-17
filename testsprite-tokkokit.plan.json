@@ -1,0 +1,53 @@
+{
+  "projectId": "8ae01a96-c422-4e2b-a936-2efe0101ea6e",
+  "type": "frontend",
+  "name": "TokkoKit Full Module E2E Verification",
+  "description": "Verifies Activation Gate, Invoice Generator (Nota WA), Chat Templates, CRM Orders Status Pipeline, and Ongkir Estimator.",
+  "priority": "p1",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Enter key PRO-DEMO into activation input and click Aktifkan TokkoKit Sekarang"
+    },
+    {
+      "type": "assertion",
+      "description": "Assert that PRO license tier badge is displayed on the sidebar header"
+    },
+    {
+      "type": "action",
+      "description": "In Buat Nota Whatsapp form, set customer name to Ani, item name to Kaos Fashion M, qty to 2, price to 75000, and shipping to 15000"
+    },
+    {
+      "type": "assertion",
+      "description": "Assert that Subtotal displays Rp 150.000 and Total displays Rp 165.000"
+    },
+    {
+      "type": "action",
+      "description": "Click Salin Teks ke WhatsApp and verify copy confirmation toast appears"
+    },
+    {
+      "type": "action",
+      "description": "Navigate to Template Chat view and search for Closing"
+    },
+    {
+      "type": "assertion",
+      "description": "Assert that template cards are filtered correctly"
+    },
+    {
+      "type": "action",
+      "description": "Navigate to Pesanan CRM view and update order status from Pending to Paid"
+    },
+    {
+      "type": "assertion",
+      "description": "Assert that status updates to Paid"
+    },
+    {
+      "type": "action",
+      "description": "Navigate to Cek Ongkir view, select Yogyakarta as origin and Jakarta as destination, then click Cek Estimasi Ongkir"
+    },
+    {
+      "type": "assertion",
+      "description": "Assert that courier options for SiCepat, JNE, and J&T display estimated shipping rates"
+    }
+  ]
+}

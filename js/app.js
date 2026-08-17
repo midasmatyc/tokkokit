@@ -141,6 +141,39 @@ class AppController {
       closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
     }
 
+    // Logo Upload Handler
+    const logoInput = document.getElementById('set-shop-logo-input');
+    const removeLogoBtn = document.getElementById('btn-remove-logo');
+
+    if (logoInput) {
+      logoInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+          this.showToast('Ukuran gambar logo maksimal 2MB', true);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = event => {
+          this.pendingLogoBase64 = event.target.result;
+          this.renderLogoPreview(this.pendingLogoBase64);
+          this.showToast('Gambar logo dipilih');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (removeLogoBtn) {
+      removeLogoBtn.addEventListener('click', () => {
+        this.pendingLogoBase64 = null;
+        this.renderLogoPreview(null);
+        if (logoInput) logoInput.value = '';
+        this.showToast('Logo toko dihapus');
+      });
+    }
+
     if (form) {
       form.addEventListener('submit', e => {
         e.preventDefault();
@@ -151,6 +184,10 @@ class AppController {
         shop.defaultTaxPercent = parseFloat(document.getElementById('set-tax').value) || 0;
         shop.defaultShippingFee = parseFloat(document.getElementById('set-shipping').value) || 0;
         shop.thankYouMessage = document.getElementById('set-thankyou').value;
+
+        if (this.pendingLogoBase64 !== undefined) {
+          shop.logoBase64 = this.pendingLogoBase64;
+        }
 
         // Bank Accounts
         const bankText = document.getElementById('set-banks').value;
@@ -168,7 +205,7 @@ class AppController {
         this.updateHeaderAndSettings();
         this.renderInvoiceModule();
         modal.classList.add('hidden');
-        this.showToast('Pengaturan toko berhasil disimpan');
+        this.showToast('Profil & logo toko berhasil disimpan');
       });
     }
 
@@ -223,9 +260,27 @@ class AppController {
     }
   }
 
+  renderLogoPreview(base64Data) {
+    const previewBox = document.getElementById('set-logo-preview-box');
+    const removeBtn = document.getElementById('btn-remove-logo');
+
+    if (!previewBox) return;
+
+    if (base64Data) {
+      previewBox.innerHTML = `<img src="${base64Data}" alt="Preview Logo" class="w-full h-full object-contain p-1" />`;
+      if (removeBtn) removeBtn.classList.remove('hidden');
+    } else {
+      previewBox.innerHTML = `<span class="text-xl text-slate-400">🏪</span>`;
+      if (removeBtn) removeBtn.classList.add('hidden');
+    }
+  }
+
   loadSettingsForm() {
     const shop = Storage.get('shopProfile') || {};
     const settings = Storage.get('settings') || {};
+
+    this.pendingLogoBase64 = shop.logoBase64 || null;
+    this.renderLogoPreview(this.pendingLogoBase64);
 
     document.getElementById('set-shop-name').value = shop.shopName || '';
     document.getElementById('set-wa-number').value = shop.waNumber || '';
