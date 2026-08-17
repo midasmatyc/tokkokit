@@ -1,0 +1,62 @@
+{
+  "updatedAt": "2026-08-15",
+  "zones": [
+    { "id": "yogyakarta", "name": "Yogyakarta / DIY" },
+    { "id": "jakarta", "name": "DKI Jakarta" },
+    { "id": "bandung", "name": "Bandung / Jawa Barat" },
+    { "id": "surabaya", "name": "Surabaya / Jawa Timur" },
+    { "id": "semarang", "name": "Semarang / Jawa Tengah" },
+    { "id": "medan", "name": "Medan / Sumatera Utara" },
+    { "id": "makassar", "name": "Makassar / Sulawesi Selatan" },
+    { "id": "denpasar", "name": "Denpasar / Bali" }
+  ],
+  "rates": {
+    "yogyakarta_jakarta": [
+      { "courier": "SiCepat BEST", "service": "Besok Sampai (1 hari)", "pricePerKg": 10000 },
+      { "courier": "JNE Reguler", "service": "Regular (2-3 hari)", "pricePerKg": 12000 },
+      { "courier": "J&T EZ", "service": "Regular (2-3 hari)", "pricePerKg": 11500 },
+      { "courier": "TIKI Reguler", "service": "Regular (2-3 hari)", "pricePerKg": 13000 },
+      { "courier": "POS Kilat Khusus", "service": "Kilat (2-4 hari)", "pricePerKg": 11000 }
+    ],
+    "yogyakarta_bandung": [
+      { "courier": "SiCepat BEST", "service": "Besok Sampai (1 hari)", "pricePerKg": 13000 },
+      { "courier": "JNE Reguler", "service": "Regular (2-3 hari)", "pricePerKg": 15000 },
+      { "courier": "J&T EZ", "service": "Regular (2-3 hari)", "pricePerKg": 14000 },
+      { "courier": "TIKI Reguler", "service": "Regular (2-3 hari)", "pricePerKg": 16000 }
+    ],
+    "yogyakarta_surabaya": [
+      { "courier": "SiCepat BEST", "service": "Besok Sampai (1 hari)", "pricePerKg": 11000 },
+      { "courier": "JNE Reguler", "service": "Regular (1-2 hari)", "pricePerKg": 13000 },
+      { "courier": "J&T EZ", "service": "Regular (1-2 hari)", "pricePerKg": 12500 }
+    ],
+    "yogyakarta_semarang": [
+      { "courier": "JNE Reguler", "service": "Regular (1 hari)", "pricePerKg": 9000 },
+      { "courier": "J&T EZ", "service": "Regular (1 hari)", "pricePerKg": 8500 }
+    ],
+    "yogyakarta_medan": [
+      { "courier": "JNE Reguler", "service": "Regular (3-4 hari)", "pricePerKg": 28000 },
+      { "courier": "SiCepat BEST", "service": "Cargo/Cepat (2-3 hari)", "pricePerKg": 26000 }
+    ],
+    "yogyakarta_makassar": [
+      { "courier": "JNE Reguler", "service": "Regular (3-4 hari)", "pricePerKg": 32000 },
+      { "courier": "POS Kilat Khusus", "service": "Kilat (3-5 hari)", "pricePerKg": 30000 }
+    ],
+    "yogyakarta_denpasar": [
+      { "courier": "JNE Reguler", "service": "Regular (2-3 hari)", "pricePerKg": 18000 },
+      { "courier": "SiCepat BEST", "service": "Cepat (1-2 hari)", "pricePerKg": 17000 }
+    ],
+    "jakarta_yogyakarta": [
+      { "courier": "JNE Reguler", "service": "Regular (2-3 hari)", "pricePerKg": 12000 },
+      { "courier": "SiCepat BEST", "service": "Besok Sampai (1 hari)", "pricePerKg": 10000 },
+      { "courier": "J&T EZ", "service": "Regular (2-3 hari)", "pricePerKg": 11500 }
+    ],
+    "jakarta_bandung": [
+      { "courier": "JNE Reguler", "service": "Regular (1 hari)", "pricePerKg": 9000 },
+      { "courier": "SiCepat BEST", "service": "Besok Sampai (1 hari)", "pricePerKg": 8000 }
+    ],
+    "jakarta_surabaya": [
+      { "courier": "JNE Reguler", "service": "Regular (2-3 hari)", "pricePerKg": 16000 },
+      { "courier": "SiCepat BEST", "service": "Cepat (1-2 hari)", "pricePerKg": 14000 }
+    ]
+  }
+}

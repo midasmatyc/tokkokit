@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TokkoKit — WhatsApp & Social Commerce Toolkit</title>
+  <meta name="description" content="Zero-installation, privacy-first web toolkit for WhatsApp, Instagram, and Facebook Marketplace sellers." />
+  <meta name="theme-color" content="#4F46E5" />
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- App Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/print.css" media="print" />
+
+  <!-- Vendor Canvas Export -->
+  <script src="vendor/html2canvas.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Printable Area (Hidden on screen, populated dynamically during window.print()) -->
+  <div id="printable-area" class="no-screen"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- ACTIVATION GATE OVERLAY (PRD §4 & §8) -->
+  <div id="activation-gate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+    <div class="max-w-md w-full bg-white rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl border border-slate-200">
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center mb-2">
+          <img src="icons/logo.png" alt="TokkoKit Logo" class="w-20 h-20 rounded-2xl object-contain shadow-md" />
+        </div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">Selamat Datang di TokkoKit</h1>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Toolkit privat serba praktis untuk seller WhatsApp & DM Instagram. Buat nota instant, simpan template chat, & lacak pesanan.
+        </p>
+      </div>
+
+      <div class="space-y-4 pt-2">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">Masukkan Kode Lisensi Anda</label>
+          <input type="text" id="activation-key-input" placeholder="Contoh: BASIC-DEMO atau PRO-DEMO" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:bg-white transition-colors uppercase" />
+        </div>
+
+        <div id="activation-error-msg" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium"></div>
+
+        <button type="button" id="btn-activate-key" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-colors shadow-lg shadow-indigo-600/25">
+          Aktifkan TokkoKit Sekarang ✨
+        </button>
+
+        <!-- Demo Pills Helper -->
+        <div class="pt-3 border-t border-slate-100">
+          <p class="text-[11px] text-slate-500 text-center mb-2">Belum punya kode? Uji coba langsung dengan demo key:</p>
+          <div class="flex justify-center gap-2">
+            <button type="button" onclick="document.getElementById('activation-key-input').value='BASIC-DEMO'" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-indigo-700 text-xs font-mono font-semibold rounded-lg border border-slate-200">BASIC-DEMO</button>
+            <button type="button" onclick="document.getElementById('activation-key-input').value='PRO-DEMO'" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-amber-700 text-xs font-mono font-semibold rounded-lg border border-slate-200">PRO-DEMO</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-2.5">
+        <span class="text-indigo-600 text-base">🛡️</span>
+        <p class="text-[11px] text-slate-500 leading-tight">
+          <strong>100% Privacy Guaranteed:</strong> Seluruh data nota, pelanggan, dan pesanan Anda disimpan hanya di HP ini dan tidak pernah dikirim ke server manapun.
+        </p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MAIN APP SHELL (PRD §4) -->
+  <div id="app-shell" class="hidden flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto">
+
+    <!-- DESKTOP SIDEBAR NAVIGATION -->
+    <aside class="hidden md:flex flex-col w-64 border-r border-slate-200 p-4 space-y-6 shrink-0 bg-white shadow-sm">
+      <!-- Brand Logo -->
+      <div class="flex items-center justify-between px-2 pt-2">
+        <div class="flex items-center gap-2.5">
+          <img src="icons/logo.png" alt="TokkoKit Logo" class="w-10 h-10 rounded-xl object-contain shadow-sm" />
+          <div>
+            <h1 class="font-extrabold text-base tracking-tight text-slate-900">TokkoKit</h1>
+            <p class="text-[10px] text-indigo-600 font-semibold tracking-wide">SELLER TOOLKIT</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="space-y-1.5 flex-1">
+        <button type="button" data-target-view="invoice" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold border transition-all text-indigo-600 border-indigo-600 bg-indigo-50/80">
+          <span class="text-base">🧾</span>
+          <span>Nota WA</span>
+        </button>
+        <button type="button" data-target-view="templates" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all">
+          <span class="text-base">💬</span>
+          <span>Template Chat</span>
+        </button>
+        <button type="button" data-target-view="orders" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all">
+          <span class="text-base">📦</span>
+          <span>Pesanan (CRM)</span>
+        </button>
+        <button type="button" data-target-view="shipping" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all">
+          <span class="text-base">🚚</span>
+          <span>Cek Ongkir</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer Info -->
+      <div class="pt-4 border-t border-slate-200 space-y-3">
+        <div class="flex items-center justify-between text-xs px-2">
+          <span class="text-slate-500 font-medium">Lisensi</span>
+          <span id="header-tier-badge" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">BASIC</span>
+        </div>
+        <button type="button" id="btn-open-settings" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors">
+          <span>⚙️</span>
+          <span>Pengaturan Toko</span>
+        </button>
+      </div>
+    </aside>
+
+
+    <!-- MOBILE APP HEADER -->
+    <div class="flex md:hidden items-center justify-between px-4 py-3 border-b border-slate-200 bg-white sticky top-0 z-30 shadow-sm">
+      <div class="flex items-center gap-2">
+        <img src="icons/logo.png" alt="TokkoKit Logo" class="w-8 h-8 rounded-lg object-contain" />
+        <span id="header-shop-name" class="font-bold text-sm text-slate-900 truncate max-w-[180px]">TokkoKit</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="autosave-indicator" class="hidden text-[10px] text-indigo-700 font-medium bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full transition-opacity">Tersimpan</span>
+        <button type="button" id="btn-open-settings-mobile" onclick="document.getElementById('btn-open-settings').click()" class="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+          ⚙️
+        </button>
+      </div>
+    </div>
+
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 p-4 sm:p-6 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+
+      <!-- MODULE 1: NOTA (INVOICE GENERATOR) -->
+      <section id="view-invoice" class="app-view space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <span>🧾</span>
+              <span>Buat Nota Whatsapp</span>
+            </h2>
+            <p class="text-xs text-slate-500">Isi rincian transaksi & salin teks nota siap kirim dalam detik.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="btn-new-invoice" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm">
+              + Nota Baru
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- Form Left Column -->
+          <div class="lg:col-span-7 space-y-5">
+            
+            <!-- Type & Status Bar -->
+            <div class="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-3">
+                  <span class="text-slate-500 font-semibold">Tipe Order:</span>
+                  <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="orderType" id="inv-type-regular" value="regular" checked class="accent-indigo-600" />
+                    <span class="text-slate-800">Regular</span>
+                  </label>
+                  <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="orderType" id="inv-type-dropship" value="dropship" class="accent-indigo-600" />
+                    <span class="text-slate-800">Dropship</span>
+                  </label>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-500 font-semibold">No. Nota:</span>
+                  <span id="inv-number-display" class="font-mono text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">260817-A1B2</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 pt-2 border-t border-slate-100">
+                <span class="text-xs text-slate-500 font-semibold">Status Pembayaran:</span>
+                <select id="inv-status-select" class="bg-white text-xs font-semibold border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 focus:outline-none focus:border-indigo-600">
+                  <option value="pending">⏳ Belum Lunas (Pending)</option>
+                  <option value="paid">✅ Lunas (Paid)</option>
+                  <option value="shipped">🚚 Dikirim (Shipped)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div class="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600">Data Pembeli</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] text-slate-500 mb-1">Nama Pembeli *</label>
+                  <input type="text" id="inv-cust-name" placeholder="misal: Ani" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-600 focus:bg-white" />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-500 mb-1">No. WhatsApp</label>
+                  <input type="text" id="inv-cust-phone" placeholder="08123456789" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-600 focus:bg-white" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-500 mb-1">Alamat (Opsional)</label>
+                <input type="text" id="inv-cust-address" placeholder="Jl. Raya No. 12, Jakarta" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-600 focus:bg-white" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-500 mb-1">Metode Pembayaran</label>
+                <input type="text" id="inv-payment-method" value="Transfer" placeholder="Transfer / COD / QRIS" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-600 focus:bg-white" />
+              </div>
+            </div>
+
+            <!-- Line Items Editor -->
+            <div class="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+              <div class="flex justify-between items-center">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-600">Rincian Barang</h3>
+                <button type="button" id="btn-add-item-row" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1">
+                  + Tambah Item
+                </button>
+              </div>
+
+              <!-- Items Container -->
+              <div id="item-rows-container" class="space-y-2"></div>
+            </div>
+
+            <!-- Tax, Shipping, & Notes -->
+            <div class="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] text-slate-500 mb-1">Pajak (%)</label>
+                  <input type="number" id="inv-tax-percent" value="0" min="0" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-600 focus:bg-white" />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-500 mb-1">Ongkir (Rp)</label>
+                  <input type="number" id="inv-shipping-fee" value="15000" min="0" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-600 focus:bg-white" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] text-slate-500 mb-1">Catatan Tambahan (Opsional)</label>
+                <textarea id="inv-note" rows="2" placeholder="Catatan khusus untuk pembeli..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-600 focus:bg-white resize-none"></textarea>
+              </div>
+            </div>
+
+            <!-- Summary Box -->
+            <div class="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-2 text-xs">
+              <div class="flex justify-between text-slate-600">
+                <span>Subtotal Barang:</span>
+                <span id="calc-subtotal" class="font-mono font-semibold">Rp 0</span>
+              </div>
+              <div class="flex justify-between text-slate-600">
+                <span>Ongkos Kirim:</span>
+                <span id="calc-shipping" class="font-mono font-semibold">Rp 0</span>
+              </div>
+              <div class="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-200">
+                <span>TOTAL AKHIR:</span>
+                <span id="calc-total" class="font-mono text-indigo-600">Rp 0</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Preview & Actions Right Column -->
+          <div class="lg:col-span-5 space-y-4 lg:sticky lg:top-8">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Pratinjau Tampilan Nota</h3>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-slate-500">Kertas:</span>
+                <select id="select-paper-size" class="bg-white text-xs border border-slate-300 rounded px-2 py-1 text-slate-800">
+                  <option value="58mm">58mm Thermal</option>
+                  <option value="80mm">80mm Thermal</option>
+                  <option value="a4">Standard A4</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Live Receipt Preview Card -->
+            <div id="receipt-preview-box" class="transition-all"></div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-2 pt-2">
+              <button type="button" id="btn-copy-whatsapp" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25">
+                <span>📋</span>
+                <span>Salin Teks ke WhatsApp</span>
+              </button>
+
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="btn-print-receipt" class="w-full bg-white hover:bg-slate-50 text-slate-800 font-semibold py-2.5 px-3 rounded-xl text-xs border border-slate-300 shadow-sm flex items-center justify-center gap-1.5">
+                  <span>🖨️</span>
+                  <span>Cetak Struct</span>
+                </button>
+                <button type="button" id="btn-export-image" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold py-2.5 px-3 rounded-xl text-xs border border-amber-300 shadow-sm flex items-center justify-center gap-1.5">
+                  <span>🖼️</span>
+                  <span>Export Gambar (Pro)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- MODULE 2: TEMPLATES (CHAT TEMPLATES) -->
+      <section id="view-templates" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <span>💬</span>
+              <span>Template Chat Vault</span>
+            </h2>
+            <p class="text-xs text-slate-500">Simpan balasan rutin & otomatis ganti nama/total harga.</p>
+          </div>
+          <button type="button" id="btn-add-template" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-sm">
+            + Template Baru
+          </button>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <input type="text" id="tpl-search-input" placeholder="Cari isi template..." class="bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 sm:w-64" />
+            <div id="template-category-tabs" class="flex flex-wrap gap-1.5"></div>
+          </div>
+        </div>
+
+        <!-- Templates Grid -->
+        <div id="templates-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </section>
+
+
+      <!-- MODULE 3: ORDERS (LOCAL CRM) -->
+      <section id="view-orders" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <span>📦</span>
+              <span>Lacak Pesanan (CRM)</span>
+            </h2>
+            <p class="text-xs text-slate-500">Pantau status pembayaran & pengiriman pelanggan Anda.</p>
+          </div>
+        </div>
+
+        <!-- Basic Tier Soft Cap Alert -->
+        <div id="orders-capped-notice" class="hidden p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>ℹ️</span>
+            <span>Lisensi Basic menampilkan 20 pesanan terbaru. Ada <strong class="capped-count font-mono">0</strong> pesanan lama tersimpan.</span>
+          </div>
+          <button type="button" onclick="document.getElementById('btn-open-settings').click()" class="text-amber-700 underline font-bold">Upgrade Pro</button>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="bg-white border border-slate-200 shadow-sm p-4 rounded-xl space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <input type="text" id="order-search-input" placeholder="Cari nama pelanggan / no nota..." class="bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 sm:w-64" />
+            
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" data-order-status-filter="All" class="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-600 text-white">Semua</button>
+              <button type="button" data-order-status-filter="pending" class="px-3 py-1 text-xs font-semibold rounded-full bg-white text-slate-700 border border-slate-300 hover:bg-slate-50">Pending</button>
+              <button type="button" data-order-status-filter="paid" class="px-3 py-1 text-xs font-semibold rounded-full bg-white text-slate-700 border border-slate-300 hover:bg-slate-50">Paid</button>
+              <button type="button" data-order-status-filter="shipped" class="px-3 py-1 text-xs font-semibold rounded-full bg-white text-slate-700 border border-slate-300 hover:bg-slate-50">Shipped</button>
+              <button type="button" data-order-status-filter="completed" class="px-3 py-1 text-xs font-semibold rounded-full bg-white text-slate-700 border border-slate-300 hover:bg-slate-50">Completed</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Orders List -->
+        <div id="orders-list-container" class="space-y-3"></div>
+      </section>
+
+
+      <!-- MODULE 4: ONG KIR (SHIPPING ESTIMATOR) -->
+      <section id="view-shipping" class="app-view hidden space-y-6 max-w-2xl mx-auto">
+        <div class="pb-2 border-b border-slate-200">
+          <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <span>🚚</span>
+            <span>Cek Ongkos Kirim</span>
+          </h2>
+          <p class="text-xs text-slate-500">Estimasi cepat tarif kurir tanpa perlu koneksi internet.</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="bg-white border border-slate-200 shadow-sm p-6 rounded-2xl space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Kota Asal Pengiriman</label>
+              <select id="ship-origin" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-600"></select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Kota Tujuan</label>
+              <select id="ship-dest" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-600"></select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Berat Paket (gram)</label>
+            <input type="number" id="ship-weight" value="1000" min="100" step="100" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-600" />
+            <p class="text-[11px] text-slate-500 mt-1">* 1000 gram = 1 kg (dibulatkan ke atas)</p>
+          </div>
+
+          <button type="button" id="btn-calc-shipping" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition-colors shadow-lg shadow-indigo-600/25">
+            Cek Estimasi Ongkir 🔍
+          </button>
+        </div>
+
+        <!-- Results Container -->
+        <div id="shipping-results-container" class="space-y-3"></div>
+      </section>
+
+    </main>
+
+    <!-- MOBILE BOTTOM TAB NAVIGATION BAR (PRD §4) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 flex justify-around p-2 shadow-lg">
+      <button type="button" data-target-view="invoice" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-indigo-600 font-bold">
+        <span class="text-lg">🧾</span>
+        <span class="text-[10px]">Nota</span>
+      </button>
+      <button type="button" data-target-view="templates" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-slate-500">
+        <span class="text-lg">💬</span>
+        <span class="text-[10px]">Template</span>
+      </button>
+      <button type="button" data-target-view="orders" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-slate-500">
+        <span class="text-lg">📦</span>
+        <span class="text-[10px]">Orders</span>
+      </button>
+      <button type="button" data-target-view="shipping" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-slate-500">
+        <span class="text-lg">🚚</span>
+        <span class="text-[10px]">Ongkir</span>
+      </button>
+    </nav>
+  </div>
+
+
+  <!-- SETTINGS MODAL -->
+  <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+    <div class="max-w-lg w-full bg-white rounded-2xl p-6 space-y-5 my-8 max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+          <span>⚙️</span>
+          <span>Pengaturan Toko & Lisensi</span>
+        </h3>
+        <button type="button" id="btn-close-settings" class="text-slate-400 hover:text-slate-700 font-bold text-lg">✕</button>
+      </div>
+
+      <form id="settings-form" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nama Toko</label>
+          <input type="text" id="set-shop-name" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">No. WhatsApp Toko</label>
+          <input type="text" id="set-wa-number" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Alamat Toko</label>
+          <input type="text" id="set-address" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Default Pajak (%)</label>
+            <input type="number" id="set-tax" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Default Ongkir (Rp)</label>
+            <input type="number" id="set-shipping" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Rekening Bank Transfer (Format: Bank | Atas Nama | No.Rekening)</label>
+          <textarea id="set-banks" rows="3" placeholder="BCA | Sari P. | 4560-1244-95" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-indigo-600"></textarea>
+          <p class="text-[10px] text-slate-500 mt-1">Satu rekening per baris.</p>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Pesan Penutup Nota (Thank You Message)</label>
+          <input type="text" id="set-thankyou" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
+        </div>
+
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md">
+          Simpan Profil Toko
+        </button>
+      </form>
+
+      <!-- Backup & Restore -->
+      <div class="pt-4 border-t border-slate-100 space-y-3">
+        <h4 class="font-bold text-xs text-slate-800">Backup & Restore Data</h4>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="btn-export-backup" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs border border-slate-300">
+            ⬇️ Download Backup JSON
+          </button>
+          <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs border border-slate-300 text-center cursor-pointer">
+            ⬆️ Import Backup JSON
+            <input type="file" id="input-import-backup" accept=".json" class="hidden" />
+          </label>
+        </div>
+      </div>
+
+      <!-- License Details -->
+      <div class="pt-4 border-t border-slate-100 space-y-2 text-xs">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500">Status Lisensi:</span>
+          <span id="set-tier-name" class="font-bold text-indigo-600">PRO</span>
+        </div>
+        <div class="flex justify-between items-center font-mono">
+          <span class="text-slate-500">Kode Lisensi:</span>
+          <span id="set-license-key" class="text-slate-700">PRO-DEMO</span>
+        </div>
+        <button type="button" id="btn-deactivate-license" class="w-full mt-2 text-xs text-rose-600 hover:text-rose-700 underline font-semibold text-center">
+          Keluar / Ganti Kode Lisensi
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- TEMPLATE EDIT/CREATE MODAL -->
+  <div id="template-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="max-w-md w-full bg-white rounded-2xl p-6 space-y-4 shadow-2xl border border-slate-200">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-sm text-slate-900">Kelola Template Chat</h3>
+        <button type="button" id="btn-close-template-modal" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+      </div>
+
+      <form id="template-form" class="space-y-3 text-xs">
+        <input type="hidden" id="tpl-id" />
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Judul Template *</label>
+          <input type="text" id="tpl-title" required placeholder="misal: Closing Terima Kasih" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Kategori</label>
+          <input type="text" id="tpl-category" placeholder="Closing Scripts / Shipping Notices" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Isi Pesan Chat *</label>
+          <textarea id="tpl-body" required rows="4" placeholder="Halo {{nama}}, total belanjaan kamu {{total}}..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-indigo-600"></textarea>
+          <div class="mt-1.5 p-2 bg-slate-50 rounded border border-slate-200 text-[10px] text-slate-600 space-y-0.5">
+            <p class="font-bold text-indigo-600">Variabel Otomatis:</p>
+            <p><code class="text-amber-800 font-mono font-bold">{{nama}}</code> → Nama Pembeli di Nota</p>
+            <p><code class="text-amber-800 font-mono font-bold">{{total}}</code> → Total Harga (misal: Rp 150.000)</p>
+            <p><code class="text-amber-800 font-mono font-bold">{{tanggal}}</code> → Tanggal Hari ini</p>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md">
+          Simpan Template
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- Module ES6 Bootstrap -->
+  <script type="module" src="js/app.js"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('[PWA] Service Worker registered:', reg.scope))
+          .catch(err => console.warn('[PWA] SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>

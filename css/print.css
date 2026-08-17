@@ -1,0 +1,79 @@
+/* Thermal Printer & Standard Document Print Stylesheet */
+
+@media print {
+  /* Hide non-printable UI elements */
+  body * {
+    visibility: hidden;
+  }
+  
+  #printable-area, #printable-area * {
+    visibility: visible;
+  }
+
+  #printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  /* Paper size profiles */
+  body.print-size-58mm #printable-area {
+    width: 58mm !important;
+    max-width: 58mm !important;
+    padding: 2mm !important;
+  }
+
+  body.print-size-80mm #printable-area {
+    width: 80mm !important;
+    max-width: 80mm !important;
+    padding: 4mm !important;
+  }
+
+  body.print-size-a4 #printable-area {
+    width: 210mm !important;
+    padding: 15mm !important;
+    font-family: Arial, sans-serif !important;
+  }
+
+  /* Print specific helpers */
+  .no-print {
+    display: none !important;
+  }
+
+  .print-header {
+    text-align: center;
+    border-bottom: 1px dashed #000;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .print-footer {
+    text-align: center;
+    border-top: 1px dashed #000;
+    padding-top: 8px;
+    margin-top: 12px;
+  }
+
+  .print-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+
+  .print-divider {
+    border-bottom: 1px dashed #000;
+    margin: 6px 0;
+  }
+
+  @page {
+    margin: 0;
+  }
+}
