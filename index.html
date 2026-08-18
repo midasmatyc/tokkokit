@@ -477,6 +477,49 @@
           <label class="block font-semibold text-slate-700 mb-1">Nama Toko</label>
           <input type="text" id="set-shop-name" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
         </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Logo Toko</label>
+          <div class="flex items-center gap-3">
+            <div id="logo-preview-wrap" class="w-14 h-14 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden shrink-0">
+              <span id="logo-preview-placeholder" class="text-2xl">🏪</span>
+              <img id="logo-preview-img" src="" alt="Logo" class="hidden w-full h-full object-contain" />
+            </div>
+            <div class="flex-1 space-y-1.5">
+              <label class="flex items-center justify-center gap-2 cursor-pointer w-full bg-white hover:bg-indigo-50 text-indigo-700 font-semibold py-2 px-3 rounded-lg border border-indigo-300 text-xs transition-colors">
+                📁 Pilih Gambar Logo
+                <input type="file" id="set-logo-upload" accept="image/*" class="hidden" />
+              </label>
+              <p class="text-[10px] text-slate-400 text-center">JPG / PNG / WebP · Maks 1MB</p>
+              <!-- Crop + Hapus action row, shown when logo is set -->
+              <div id="logo-action-btns" class="hidden grid grid-cols-2 gap-1.5">
+                <button type="button" id="btn-crop-logo" class="text-xs font-semibold py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors">✂️ Crop</button>
+                <button type="button" id="btn-remove-logo" class="text-xs font-semibold py-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors">✕ Hapus</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logo size slider — only shown when a logo exists -->
+          <div id="logo-size-row" class="hidden mt-3 pt-3 border-t border-slate-100">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="font-semibold text-slate-600">Ukuran Logo di Nota</label>
+              <span id="logo-size-label" class="font-mono text-indigo-600 font-bold text-[11px] bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">48px</span>
+            </div>
+            <input
+              type="range"
+              id="set-logo-size"
+              min="24"
+              max="120"
+              step="4"
+              value="48"
+              class="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-indigo-600 bg-slate-200"
+            />
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+              <span>Kecil (24px)</span>
+              <span>Besar (120px)</span>
+            </div>
+          </div>
+        </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-1">No. WhatsApp Toko</label>
           <input type="text" id="set-wa-number" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-indigo-600" />
@@ -539,6 +582,33 @@
         <button type="button" id="btn-deactivate-license" class="w-full mt-2 text-xs text-rose-600 hover:text-rose-700 underline font-semibold text-center">
           Keluar / Ganti Kode Lisensi
         </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- LOGO CROP MODAL (z-[60] floats above settings modal z-50) -->
+  <div id="logo-crop-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl overflow-hidden w-full max-w-sm shadow-2xl border border-slate-100">
+
+      <!-- Header -->
+      <div class="flex justify-between items-start px-5 py-4 border-b border-slate-100">
+        <div>
+          <h4 class="font-bold text-sm text-slate-900">✂️ Trim / Crop Logo</h4>
+          <p class="text-[11px] text-slate-500 mt-0.5">Geser sudut &amp; tepi kotak untuk memilih area · Geser dalam kotak untuk memindahkan</p>
+        </div>
+        <button id="btn-cancel-crop" class="text-slate-400 hover:text-slate-700 font-bold text-xl leading-none ml-3">✕</button>
+      </div>
+
+      <!-- Canvas wrapper -->
+      <div class="bg-slate-100 flex items-center justify-center p-3" style="min-height:220px">
+        <canvas id="crop-canvas" class="block touch-none rounded shadow-sm" style="max-width:100%;max-height:300px"></canvas>
+      </div>
+
+      <!-- Actions -->
+      <div class="px-5 py-4 grid grid-cols-2 gap-2">
+        <button id="btn-cancel-crop-action" class="py-2.5 text-xs font-semibold rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors">Batal</button>
+        <button id="btn-apply-crop" class="py-2.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-colors">✅ Terapkan Crop</button>
       </div>
     </div>
   </div>

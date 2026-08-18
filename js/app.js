@@ -152,6 +152,26 @@ class AppController {
         shop.defaultShippingFee = parseFloat(document.getElementById('set-shipping').value) || 0;
         shop.thankYouMessage = document.getElementById('set-thankyou').value;
 
+        // Save logo to a dedicated key (separate from shopProfile to avoid JSON quota issues)
+        if (this._stagedLogoBase64 !== undefined) {
+          if (this._stagedLogoBase64) {
+            try {
+              localStorage.setItem('tokkokit_shopLogo', this._stagedLogoBase64);
+            } catch (err) {
+              this.showToast('Logo terlalu besar, coba gambar yang lebih kecil', true);
+            }
+          } else {
+            localStorage.removeItem('tokkokit_shopLogo');
+          }
+          this._stagedLogoBase64 = undefined;
+        }
+
+        // Save logo size
+        const logoSizeEl = document.getElementById('set-logo-size');
+        if (logoSizeEl) {
+          localStorage.setItem('tokkokit_shopLogoSize', logoSizeEl.value);
+        }
+
         // Bank Accounts
         const bankText = document.getElementById('set-banks').value;
         const bankLines = bankText.split('\n').filter(l => l.trim());
@@ -169,6 +189,68 @@ class AppController {
         this.renderInvoiceModule();
         modal.classList.add('hidden');
         this.showToast('Pengaturan toko berhasil disimpan');
+      });
+    }
+
+    // Logo Uploader — opens crop modal instead of directly setting
+    const logoInput = document.getElementById('set-logo-upload');
+    if (logoInput) {
+      logoInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 1.2 * 1024 * 1024) {
+          this.showToast('Ukuran file terlalu besar (maks 1MB)', true);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = evt => {
+          this._rawUploadBase64 = evt.target.result; // keep original for re-crop
+          this.openCropModal(evt.target.result);
+        };
+        reader.readAsDataURL(file);
+        // Reset input so same file can be picked again
+        logoInput.value = '';
+      });
+    }
+
+    // Crop Logo button — re-open cropper on existing logo
+    const cropLogoBtn = document.getElementById('btn-crop-logo');
+    if (cropLogoBtn) {
+      cropLogoBtn.addEventListener('click', () => {
+        const base = this._rawUploadBase64 || localStorage.getItem('tokkokit_shopLogo');
+        if (base) this.openCropModal(base);
+      });
+    }
+
+    // Remove Logo button
+    const removeLogo = document.getElementById('btn-remove-logo');
+    if (removeLogo) {
+      removeLogo.addEventListener('click', () => {
+        this._stagedLogoBase64 = null;
+        this._rawUploadBase64 = null;
+        this._updateLogoPreview(null);
+        this._liveUpdateInvoiceLogo(null);
+      });
+    }
+
+    // Crop modal — cancel
+    ['btn-cancel-crop', 'btn-cancel-crop-action'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.addEventListener('click', () => this._closeCropModal());
+    });
+
+    // Crop modal — apply
+    const applyBtn = document.getElementById('btn-apply-crop');
+    if (applyBtn) applyBtn.addEventListener('click', () => this._applyCrop());
+
+    // Logo size slider — live update
+    const logoSizeSlider = document.getElementById('set-logo-size');
+    const logoSizeLabel = document.getElementById('logo-size-label');
+    if (logoSizeSlider) {
+      logoSizeSlider.addEventListener('input', () => {
+        const px = parseInt(logoSizeSlider.value);
+        if (logoSizeLabel) logoSizeLabel.textContent = `${px}px`;
+        this._liveUpdateLogoSize(px);
       });
     }
 
@@ -239,6 +321,322 @@ class AppController {
 
     document.getElementById('set-license-key').textContent = settings.licenseKey || 'N/A';
     document.getElementById('set-tier-name').textContent = (settings.tier || 'unactivated').toUpperCase();
+
+    // Restore logo preview from dedicated logo storage key
+    this._stagedLogoBase64 = undefined; // clear any pending staged value
+    const savedLogo = localStorage.getItem('tokkokit_shopLogo') || null;
+    this._updateLogoPreview(savedLogo);
+
+    // Restore logo size slider
+    const savedSize = parseInt(localStorage.getItem('tokkokit_shopLogoSize')) || 48;
+    const sizeSlider = document.getElementById('set-logo-size');
+    const sizeLabel = document.getElementById('logo-size-label');
+    if (sizeSlider) sizeSlider.value = savedSize;
+    if (sizeLabel) sizeLabel.textContent = `${savedSize}px`;
+  }
+
+  _updateLogoPreview(base64) {
+    const img = document.getElementById('logo-preview-img');
+    const placeholder = document.getElementById('logo-preview-placeholder');
+    const actionBtns = document.getElementById('logo-action-btns');
+    const sizeRow = document.getElementById('logo-size-row');
+    if (!img || !placeholder) return;
+
+    if (base64) {
+      img.src = base64;
+      img.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+      if (actionBtns) actionBtns.classList.remove('hidden');
+      if (sizeRow) sizeRow.classList.remove('hidden');
+    } else {
+      img.src = '';
+      img.classList.add('hidden');
+      placeholder.classList.remove('hidden');
+      if (actionBtns) actionBtns.classList.add('hidden');
+      if (sizeRow) sizeRow.classList.add('hidden');
+    }
+  }
+
+  /**
+   * Live-patches the logo inside the receipt preview box without a full re-render.
+   * Called immediately when user picks or removes a logo, before saving.
+   */
+  _liveUpdateInvoiceLogo(base64) {
+    const previewContent = document.getElementById('receipt-preview-content');
+    if (!previewContent) return;
+
+    const header = previewContent.querySelector('div.text-center');
+    if (!header) return;
+
+    let logoImg = header.querySelector('img.receipt-logo');
+    const px = parseInt(localStorage.getItem('tokkokit_shopLogoSize')) || 48;
+
+    if (base64) {
+      if (!logoImg) {
+        logoImg = document.createElement('img');
+        logoImg.className = 'receipt-logo mx-auto mb-2 object-contain';
+        header.insertBefore(logoImg, header.firstChild);
+      }
+      logoImg.src = base64;
+      logoImg.style.height = `${px}px`;
+    } else {
+      if (logoImg) logoImg.remove();
+    }
+  }
+
+  /**
+   * Live-updates just the logo height in the receipt preview when the slider moves.
+   */
+  _liveUpdateLogoSize(px) {
+    const previewContent = document.getElementById('receipt-preview-content');
+    if (!previewContent) return;
+    const logoImg = previewContent.querySelector('img.receipt-logo');
+    if (logoImg) logoImg.style.height = `${px}px`;
+  }
+
+  // ─── LOGO CROP ENGINE ─────────────────────────────────────────────────────
+
+  /**
+   * Opens the crop modal and draws the image on canvas ready for interaction.
+   * @param {string} imageBase64 - data URL of the image to crop
+   */
+  openCropModal(imageBase64) {
+    const modal = document.getElementById('logo-crop-modal');
+    const canvas = document.getElementById('crop-canvas');
+    if (!modal || !canvas) return;
+
+    const img = new Image();
+    img.onload = () => {
+      // Scale to fit display (max 320×290)
+      const MAX_W = 320, MAX_H = 290;
+      const scale = Math.min(MAX_W / img.naturalWidth, MAX_H / img.naturalHeight, 1);
+      const cw = Math.round(img.naturalWidth * scale);
+      const ch = Math.round(img.naturalHeight * scale);
+
+      canvas.width = cw;
+      canvas.height = ch;
+      canvas.style.width  = cw + 'px';
+      canvas.style.height = ch + 'px';
+
+      this._cropCtx = canvas.getContext('2d');
+      this._cropImg = img;
+      this._cropImgScale = scale;
+      this._cropDrag = null;
+
+      // Initial rect: full image with 4px inset
+      const p = 4;
+      this._cropRect = { x: p, y: p, w: cw - p * 2, h: ch - p * 2 };
+
+      this._drawCropCanvas();
+      this._bindCropEvents(canvas);
+      modal.classList.remove('hidden');
+    };
+    img.src = imageBase64;
+  }
+
+  _closeCropModal() {
+    const modal = document.getElementById('logo-crop-modal');
+    if (modal) modal.classList.add('hidden');
+    this._unbindCropEvents();
+    this._cropImg = null;
+    this._cropCtx = null;
+    this._cropDrag = null;
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  _getCropHandles() {
+    const { x, y, w, h } = this._cropRect;
+    return [
+      { id: 'nw', x,         y         },
+      { id: 'n',  x: x+w/2,  y         },
+      { id: 'ne', x: x+w,    y         },
+      { id: 'e',  x: x+w,    y: y+h/2  },
+      { id: 'se', x: x+w,    y: y+h    },
+      { id: 's',  x: x+w/2,  y: y+h    },
+      { id: 'sw', x,         y: y+h    },
+      { id: 'w',  x,         y: y+h/2  },
+    ];
+  }
+
+  _getHandleAt(mx, my) {
+    const HIT = 12;
+    for (const h of this._getCropHandles()) {
+      if ((mx-h.x)**2 + (my-h.y)**2 <= HIT*HIT) return h;
+    }
+    return null;
+  }
+
+  _isInsideRect(mx, my) {
+    const { x, y, w, h } = this._cropRect;
+    return mx >= x && mx <= x+w && my >= y && my <= y+h;
+  }
+
+  _getCanvasCoords(canvas, e) {
+    const r = canvas.getBoundingClientRect();
+    const sx = canvas.width / r.width;
+    const sy = canvas.height / r.height;
+    const src = e.touches ? (e.touches[0] || e.changedTouches[0]) : e;
+    return { x: (src.clientX - r.left) * sx, y: (src.clientY - r.top) * sy };
+  }
+
+  // ── Drawing ───────────────────────────────────────────────────────────────
+
+  _drawCropCanvas() {
+    const canvas = document.getElementById('crop-canvas');
+    const ctx = this._cropCtx;
+    if (!ctx || !canvas || !this._cropImg) return;
+
+    const { x, y, w, h } = this._cropRect;
+    const cw = canvas.width, ch = canvas.height;
+
+    // 1. Draw full image
+    ctx.drawImage(this._cropImg, 0, 0, cw, ch);
+
+    // 2. Dim everything outside the crop rect
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.52)';
+    ctx.fillRect(0, 0, cw, y);           // top strip
+    ctx.fillRect(0, y+h, cw, ch-y-h);   // bottom strip
+    ctx.fillRect(0, y, x, h);           // left strip
+    ctx.fillRect(x+w, y, cw-x-w, h);   // right strip
+    ctx.restore();
+
+    // 3. Crop rect border
+    ctx.save();
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x+1, y+1, w-2, h-2);
+    ctx.restore();
+
+    // 4. Rule-of-thirds grid inside rect
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    [1/3, 2/3].forEach(t => {
+      // verticals
+      ctx.moveTo(x + w*t, y); ctx.lineTo(x + w*t, y+h);
+      // horizontals
+      ctx.moveTo(x, y + h*t); ctx.lineTo(x+w, y + h*t);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 5. Handles (filled circles)
+    ctx.save();
+    this._getCropHandles().forEach(handle => {
+      ctx.beginPath();
+      ctx.arc(handle.x, handle.y, 5, 0, Math.PI*2);
+      ctx.fillStyle = '#6366f1';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  // ── Event binding ─────────────────────────────────────────────────────────
+
+  _bindCropEvents(canvas) {
+    this._unbindCropEvents();
+
+    this._onCropDown  = e => { e.preventDefault(); this._onCropPointerDown(this._getCanvasCoords(canvas, e), canvas); };
+    this._onCropMove  = e => { e.preventDefault(); this._onCropPointerMove(this._getCanvasCoords(canvas, e), canvas); };
+    this._onCropUp    = e => { e.preventDefault(); this._cropDrag = null; };
+
+    canvas.addEventListener('mousedown',  this._onCropDown);
+    canvas.addEventListener('mousemove',  this._onCropMove);
+    canvas.addEventListener('mouseup',    this._onCropUp);
+    canvas.addEventListener('mouseleave', this._onCropUp);
+    canvas.addEventListener('touchstart', this._onCropDown, { passive: false });
+    canvas.addEventListener('touchmove',  this._onCropMove, { passive: false });
+    canvas.addEventListener('touchend',   this._onCropUp,   { passive: false });
+    this._cropCanvas = canvas;
+  }
+
+  _unbindCropEvents() {
+    const c = this._cropCanvas;
+    if (!c) return;
+    ['mousedown','mousemove','mouseup','mouseleave'].forEach(ev => c.removeEventListener(ev, this['_onCrop' + (ev === 'mousedown' ? 'Down' : ev === 'mousemove' ? 'Move' : 'Up')]));
+    ['touchstart','touchmove','touchend'].forEach(ev => c.removeEventListener(ev, this['_onCrop' + (ev === 'touchstart' ? 'Down' : ev === 'touchmove' ? 'Move' : 'Up')]));
+    this._cropCanvas = null;
+  }
+
+  // ── Interaction handlers ──────────────────────────────────────────────────
+
+  _onCropPointerDown({ x: mx, y: my }, canvas) {
+    const handle = this._getHandleAt(mx, my);
+    if (handle) {
+      this._cropDrag = { type: 'handle', id: handle.id, startX: mx, startY: my, startRect: { ...this._cropRect } };
+      const cursors = { nw:'nw-resize', n:'n-resize', ne:'ne-resize', e:'e-resize', se:'se-resize', s:'s-resize', sw:'sw-resize', w:'w-resize' };
+      canvas.style.cursor = cursors[handle.id];
+    } else if (this._isInsideRect(mx, my)) {
+      this._cropDrag = { type: 'move', startX: mx, startY: my, startRect: { ...this._cropRect } };
+      canvas.style.cursor = 'grabbing';
+    }
+  }
+
+  _onCropPointerMove({ x: mx, y: my }, canvas) {
+    // Cursor hint when not dragging
+    if (!this._cropDrag) {
+      const h = this._getHandleAt(mx, my);
+      const cursors = { nw:'nw-resize', n:'n-resize', ne:'ne-resize', e:'e-resize', se:'se-resize', s:'s-resize', sw:'sw-resize', w:'w-resize' };
+      canvas.style.cursor = h ? cursors[h.id] : (this._isInsideRect(mx, my) ? 'grab' : 'crosshair');
+      return;
+    }
+
+    const cw = canvas.width, ch = canvas.height;
+    const dx = mx - this._cropDrag.startX;
+    const dy = my - this._cropDrag.startY;
+    const sr = this._cropDrag.startRect;
+    const MIN = 20;
+    let { x, y, w, h } = sr;
+
+    if (this._cropDrag.type === 'move') {
+      x = Math.max(0, Math.min(cw - w, sr.x + dx));
+      y = Math.max(0, Math.min(ch - h, sr.y + dy));
+    } else {
+      const id = this._cropDrag.id;
+      if (id.includes('n')) { y = Math.max(0, Math.min(sr.y + sr.h - MIN, sr.y + dy)); h = sr.y + sr.h - y; }
+      if (id.includes('s')) { h = Math.max(MIN, Math.min(ch - y, sr.h + dy)); }
+      if (id.includes('w')) { x = Math.max(0, Math.min(sr.x + sr.w - MIN, sr.x + dx)); w = sr.x + sr.w - x; }
+      if (id.includes('e')) { w = Math.max(MIN, Math.min(cw - x, sr.w + dx)); }
+    }
+
+    this._cropRect = { x, y, w, h };
+    this._drawCropCanvas();
+  }
+
+  // ── Apply crop ────────────────────────────────────────────────────────────
+
+  _applyCrop() {
+    if (!this._cropImg || !this._cropRect) return;
+    const { x, y, w, h } = this._cropRect;
+    const s = this._cropImgScale;
+
+    // Convert canvas coords → original image coords
+    const sx = x / s, sy = y / s, sw = w / s, sh = h / s;
+
+    // Output at 2× resolution for sharpness
+    const dpr = Math.min(2, 400 / Math.max(sw, sh, 1));
+    const out = document.createElement('canvas');
+    out.width  = Math.round(sw * dpr);
+    out.height = Math.round(sh * dpr);
+    const ctx = out.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(this._cropImg, sx, sy, sw, sh, 0, 0, out.width, out.height);
+
+    const croppedBase64 = out.toDataURL('image/png');
+    this._stagedLogoBase64 = croppedBase64;
+    this._updateLogoPreview(croppedBase64);
+    this._liveUpdateInvoiceLogo(croppedBase64);
+    this._closeCropModal();
+    this.showToast('Logo berhasil di-crop!');
   }
 
   // --- Navigation & View Switcher ---
