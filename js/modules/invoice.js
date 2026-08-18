@@ -190,6 +190,9 @@ export const InvoiceModule = {
   generateReceiptHTML(invoiceData) {
     const shop = Storage.get('shopProfile') || {};
     const totals = this.calculateInvoiceTotals(invoiceData);
+    // Logo stored in a dedicated key to avoid JSON quota issues with base64
+    const logoBase64 = localStorage.getItem('tokkokit_shopLogo') || null;
+    const logoSize = parseInt(localStorage.getItem('tokkokit_shopLogoSize')) || 48;
 
     const dateStr = new Date(invoiceData.date || Date.now()).toLocaleDateString('id-ID', {
       day: 'numeric',
@@ -204,11 +207,11 @@ export const InvoiceModule = {
     return `
       <div id="receipt-preview-content" class="p-6 receipt-paper text-sm text-gray-900 rounded-lg">
         <div class="text-center border-b border-dashed border-gray-400 pb-4 mb-4">
-          ${shop.logoBase64 ? `<img src="${shop.logoBase64}" alt="Logo Toko" class="h-14 mx-auto mb-2.5 object-contain" />` : ''}
+          ${logoBase64 ? `<img src="${logoBase64}" class="receipt-logo mx-auto mb-2 object-contain" style="height:${logoSize}px" />` : ''}
           <h2 class="font-bold text-lg text-gray-900 tracking-tight">${shop.shopName || 'Toko Saya'}</h2>
           <p class="text-xs text-gray-600">${shop.address || ''}</p>
           <p class="text-xs text-gray-600">${shop.waNumber || ''}</p>
-        </div>`
+        </div>
 
         <div class="flex justify-between items-start text-xs mb-3">
           <div>

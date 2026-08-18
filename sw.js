@@ -1,5 +1,5 @@
 /* TokkoKit PWA Service Worker (sw.js) */
-const CACHE_NAME = 'tokkokit-v1.1';
+const CACHE_NAME = 'tokkokit-v1.4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
