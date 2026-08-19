@@ -732,10 +732,41 @@ class AppController {
     bindInput('inv-cust-phone', 'customerPhone');
     bindInput('inv-cust-address', 'customerAddress');
     bindInput('inv-payment-method', 'paymentMethod');
-    bindInput('inv-discount', 'discountAmount');
     bindInput('inv-tax-percent', 'taxPercent');
     bindInput('inv-shipping-fee', 'shipping');
     bindInput('inv-note', 'note');
+
+    // Discount amount input
+    const discountInput = document.getElementById('inv-discount');
+    if (discountInput) {
+      discountInput.addEventListener('input', e => {
+        this.currentInvoiceState.discountAmount = parseFloat(e.target.value) || 0;
+        this.updateInvoicePreview();
+      });
+    }
+
+    // Discount type toggle (Rp / %)
+    const setDiscountType = (type) => {
+      this.currentInvoiceState.discountType = type;
+      const rpBtn  = document.getElementById('inv-discount-type-rp');
+      const pctBtn = document.getElementById('inv-discount-type-pct');
+      const label  = document.getElementById('inv-discount-label');
+      if (rpBtn && pctBtn) {
+        if (type === 'rp') {
+          rpBtn.className  = 'px-2.5 py-2 bg-emerald-600 text-white transition-colors';
+          pctBtn.className = 'px-2.5 py-2 bg-white text-slate-500 hover:bg-slate-50 transition-colors';
+        } else {
+          rpBtn.className  = 'px-2.5 py-2 bg-white text-slate-500 hover:bg-slate-50 transition-colors';
+          pctBtn.className = 'px-2.5 py-2 bg-emerald-600 text-white transition-colors';
+        }
+      }
+      if (label) label.textContent = type === 'pct' ? 'Diskon (0–100%)' : 'Diskon';
+      this.updateInvoicePreview();
+    };
+
+    document.getElementById('inv-discount-type-rp')?.addEventListener('click', () => setDiscountType('rp'));
+    document.getElementById('inv-discount-type-pct')?.addEventListener('click', () => setDiscountType('pct'));
+    this._setDiscountType = setDiscountType; // expose for loadInvoiceStateToForm
 
     // Add item row
     const addRowBtn = document.getElementById('btn-add-item-row');
@@ -828,6 +859,8 @@ class AppController {
     document.getElementById('inv-shipping-fee').value = s.shipping || 0;
     const discountEl = document.getElementById('inv-discount');
     if (discountEl) discountEl.value = s.discountAmount || 0;
+    // Restore discount type toggle
+    if (this._setDiscountType) this._setDiscountType(s.discountType || 'rp');
     document.getElementById('inv-note').value = s.note || '';
 
     this.renderItemRows();

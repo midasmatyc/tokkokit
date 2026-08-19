@@ -57,6 +57,7 @@ export const InvoiceModule = {
       ],
       subtotal: 0,
       discountAmount: 0,
+      discountType: 'rp',
       taxPercent: shop.defaultTaxPercent || 0,
       tax: 0,
       shipping: shop.defaultShippingFee || 0,
@@ -75,7 +76,11 @@ export const InvoiceModule = {
       subtotal += q * p;
     });
 
-    const discountAmount = Math.max(0, parseFloat(invoiceData.discountAmount) || 0);
+    const discountRaw = Math.max(0, parseFloat(invoiceData.discountAmount) || 0);
+    const discountType = invoiceData.discountType || 'rp';
+    const discountAmount = discountType === 'pct'
+      ? Math.round(subtotal * (Math.min(discountRaw, 100) / 100))
+      : Math.min(discountRaw, subtotal);
     const discountedSubtotal = Math.max(0, subtotal - discountAmount);
     const taxPercent = Math.max(0, parseFloat(invoiceData.taxPercent) || 0);
     const tax = Math.round(discountedSubtotal * (taxPercent / 100));
@@ -163,7 +168,12 @@ export const InvoiceModule = {
 
     text += `------------------------------\n`;
     text += `Subtotal: ${this.formatRupiah(totals.subtotal)}\n`;
-    if (totals.discountAmount > 0) text += `Diskon: -${this.formatRupiah(totals.discountAmount)}\n`;
+    if (totals.discountAmount > 0) {
+      const discLabel = (invoiceData.discountType === 'pct')
+        ? `Diskon (${invoiceData.discountAmount}%)`
+        : 'Diskon';
+      text += `${discLabel}: -${this.formatRupiah(totals.discountAmount)}\n`;
+    }
     if (totals.tax > 0) text += `Pajak (${totals.taxPercent}%): ${this.formatRupiah(totals.tax)}\n`;
     text += `Ongkir: ${this.formatRupiah(totals.shipping)}\n`;
     text += `*TOTAL: ${this.formatRupiah(totals.total)}*\n`;
@@ -257,7 +267,7 @@ export const InvoiceModule = {
           </div>
           ${totals.discountAmount > 0 ? `
             <div class="flex justify-between text-emerald-600">
-              <span>Diskon</span>
+              <span>${invoiceData.discountType === 'pct' ? `Diskon (${invoiceData.discountAmount}%)` : 'Diskon'}</span>
               <span class="font-mono">-${this.formatRupiah(totals.discountAmount)}</span>
             </div>
           ` : ''}
