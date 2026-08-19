@@ -764,8 +764,13 @@ class AppController {
       this.updateInvoicePreview();
     };
 
-    document.getElementById('inv-discount-type-rp')?.addEventListener('click', () => setDiscountType('rp'));
-    document.getElementById('inv-discount-type-pct')?.addEventListener('click', () => setDiscountType('pct'));
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#inv-discount-type-rp, #inv-discount-type-pct');
+      if (!btn) return;
+      const type = btn.id === 'inv-discount-type-rp' ? 'rp' : 'pct';
+      console.log('[TokkoKit] Discount type toggled:', type);
+      setDiscountType(type);
+    });
     this._setDiscountType = setDiscountType; // expose for loadInvoiceStateToForm
 
     // Add item row
