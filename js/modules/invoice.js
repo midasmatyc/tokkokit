@@ -56,6 +56,7 @@ export const InvoiceModule = {
         { name: '', qty: 1, price: 0 }
       ],
       subtotal: 0,
+      discountAmount: 0,
       taxPercent: shop.defaultTaxPercent || 0,
       tax: 0,
       shipping: shop.defaultShippingFee || 0,
@@ -74,13 +75,16 @@ export const InvoiceModule = {
       subtotal += q * p;
     });
 
+    const discountAmount = Math.max(0, parseFloat(invoiceData.discountAmount) || 0);
+    const discountedSubtotal = Math.max(0, subtotal - discountAmount);
     const taxPercent = Math.max(0, parseFloat(invoiceData.taxPercent) || 0);
-    const tax = Math.round(subtotal * (taxPercent / 100));
+    const tax = Math.round(discountedSubtotal * (taxPercent / 100));
     const shipping = Math.max(0, parseFloat(invoiceData.shipping) || 0);
-    const total = subtotal + tax + shipping;
+    const total = discountedSubtotal + tax + shipping;
 
     return {
       subtotal,
+      discountAmount,
       tax,
       taxPercent,
       shipping,
@@ -159,6 +163,7 @@ export const InvoiceModule = {
 
     text += `------------------------------\n`;
     text += `Subtotal: ${this.formatRupiah(totals.subtotal)}\n`;
+    if (totals.discountAmount > 0) text += `Diskon: -${this.formatRupiah(totals.discountAmount)}\n`;
     if (totals.tax > 0) text += `Pajak (${totals.taxPercent}%): ${this.formatRupiah(totals.tax)}\n`;
     text += `Ongkir: ${this.formatRupiah(totals.shipping)}\n`;
     text += `*TOTAL: ${this.formatRupiah(totals.total)}*\n`;
@@ -250,6 +255,12 @@ export const InvoiceModule = {
             <span class="text-gray-600">Subtotal</span>
             <span class="font-mono">${this.formatRupiah(totals.subtotal)}</span>
           </div>
+          ${totals.discountAmount > 0 ? `
+            <div class="flex justify-between text-emerald-600">
+              <span>Diskon</span>
+              <span class="font-mono">-${this.formatRupiah(totals.discountAmount)}</span>
+            </div>
+          ` : ''}
           ${totals.tax > 0 ? `
             <div class="flex justify-between">
               <span class="text-gray-600">Pajak (${totals.taxPercent}%)</span>

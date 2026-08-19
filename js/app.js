@@ -732,6 +732,7 @@ class AppController {
     bindInput('inv-cust-phone', 'customerPhone');
     bindInput('inv-cust-address', 'customerAddress');
     bindInput('inv-payment-method', 'paymentMethod');
+    bindInput('inv-discount', 'discountAmount');
     bindInput('inv-tax-percent', 'taxPercent');
     bindInput('inv-shipping-fee', 'shipping');
     bindInput('inv-note', 'note');
@@ -825,6 +826,8 @@ class AppController {
     document.getElementById('inv-payment-method').value = s.paymentMethod || 'Transfer';
     document.getElementById('inv-tax-percent').value = s.taxPercent || 0;
     document.getElementById('inv-shipping-fee').value = s.shipping || 0;
+    const discountEl = document.getElementById('inv-discount');
+    if (discountEl) discountEl.value = s.discountAmount || 0;
     document.getElementById('inv-note').value = s.note || '';
 
     this.renderItemRows();
@@ -886,10 +889,20 @@ class AppController {
 
     // Update totals UI
     const subtotalEl = document.getElementById('calc-subtotal');
+    const discountRowEl = document.getElementById('calc-discount-row');
+    const discountEl = document.getElementById('calc-discount');
     const shippingEl = document.getElementById('calc-shipping');
     const grandTotalEl = document.getElementById('calc-total');
 
     if (subtotalEl) subtotalEl.textContent = InvoiceModule.formatRupiah(totals.subtotal);
+    if (discountRowEl) {
+      if (totals.discountAmount > 0) {
+        discountRowEl.classList.remove('hidden');
+        if (discountEl) discountEl.textContent = '- ' + InvoiceModule.formatRupiah(totals.discountAmount);
+      } else {
+        discountRowEl.classList.add('hidden');
+      }
+    }
     if (shippingEl) shippingEl.textContent = InvoiceModule.formatRupiah(totals.shipping);
     if (grandTotalEl) grandTotalEl.textContent = InvoiceModule.formatRupiah(totals.total);
 
