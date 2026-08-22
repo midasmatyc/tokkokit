@@ -60,7 +60,7 @@ export const InvoiceModule = {
       discountType: 'rp',
       taxPercent: shop.defaultTaxPercent || 0,
       tax: 0,
-      shipping: shop.defaultShippingFee || 0,
+      shipping: 0,
       total: 0,
       linkedOrderId: 'ord_' + Date.now()
     };
@@ -175,7 +175,7 @@ export const InvoiceModule = {
       text += `${discLabel}: -${this.formatRupiah(totals.discountAmount)}\n`;
     }
     if (totals.tax > 0) text += `Pajak (${totals.taxPercent}%): ${this.formatRupiah(totals.tax)}\n`;
-    text += `Ongkir: ${this.formatRupiah(totals.shipping)}\n`;
+    if (totals.shipping > 0) text += `Ongkir: ${this.formatRupiah(totals.shipping)}\n`;
     text += `*TOTAL: ${this.formatRupiah(totals.total)}*\n`;
 
     if (invoiceData.note && invoiceData.note.trim()) {
@@ -277,10 +277,12 @@ export const InvoiceModule = {
               <span class="font-mono">${this.formatRupiah(totals.tax)}</span>
             </div>
           ` : ''}
-          <div class="flex justify-between">
-            <span class="text-gray-600">Ongkir</span>
-            <span class="font-mono">${this.formatRupiah(totals.shipping)}</span>
-          </div>
+          ${totals.shipping > 0 ? `
+            <div class="flex justify-between">
+              <span class="text-gray-600">Ongkir</span>
+              <span class="font-mono">${this.formatRupiah(totals.shipping)}</span>
+            </div>
+          ` : ''}
           <div class="flex justify-between font-bold text-base pt-2 border-t border-gray-300">
             <span>TOTAL</span>
             <span class="font-mono text-emerald-700">${this.formatRupiah(totals.total)}</span>

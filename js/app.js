@@ -941,7 +941,17 @@ class AppController {
         discountRowEl.classList.add('hidden');
       }
     }
-    if (shippingEl) shippingEl.textContent = InvoiceModule.formatRupiah(totals.shipping);
+    const shippingRowEl = document.getElementById('calc-shipping-row');
+    if (shippingRowEl) {
+      if (totals.shipping > 0) {
+        shippingRowEl.classList.remove('hidden');
+        if (shippingEl) shippingEl.textContent = InvoiceModule.formatRupiah(totals.shipping);
+      } else {
+        shippingRowEl.classList.add('hidden');
+      }
+    } else if (shippingEl) {
+      shippingEl.textContent = InvoiceModule.formatRupiah(totals.shipping);
+    }
     if (grandTotalEl) grandTotalEl.textContent = InvoiceModule.formatRupiah(totals.total);
 
     // Update Live Receipt Preview Box
